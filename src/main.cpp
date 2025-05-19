@@ -1,93 +1,91 @@
 #include <iostream>
-#include <thread>
 
 #include "config.h"
-#include "api.h"
-#include "loader.h"
-#include "timer.h"
-#include "cli.h"
 
-void exitOnTimeout(Timer &generalTimer, bool &exitFlag)
+#include "clipboard.h"
+#include "PasswordManager.h"
+
+void loginTimeoutCallback()
 {
-        if (timeLimit == NULL)
-                return;
-        while (generalTimer.elapsed < timeLimit)
-        {
-                generalTimer.update();
-                msleep(10);
-        }
-        setClipboard("");
-        clear();
-        exitFlag = true;
+        std::cout << "Login timeout reached.\n";
+}
+
+void passwordTimeoutCallback()
+{
+        std::cout << "Password timeout reached.\n";
+}
+
+void timeoutCallback()
+{
+        std::cout << "Timeout reached.\n";
+}
+
+inline bool isNumber(const std::string &str)
+{
+        return !str.empty() && std::all_of(str.begin(), str.end(), ::isdigit);
 }
 
 int main()
 {
-        Timer generalTimer;
-        generalTimer.start();
+        PM::PasswordManager pm("passwords.aes", PM::ENCRYPTED, PM::AES256, 20, 10, 60);
+        pm.setCallback(PM::LOGIN_TIMEOUT_EVENT, loginTimeoutCallback);
+        pm.setCallback(PM::PASSWORD_TIMEOUT_EVENT, passwordTimeoutCallback);
+        pm.setCallback(PM::TIMEOUT_EVENT, timeoutCallback);
 
-        bool exitFlag = false;
-        std::thread timeoutThread(exitOnTimeout, std::ref(generalTimer), std::ref(exitFlag));
+        Clipboard clipboard = Clipboard();
 
-        AccountsData data;
-        if (encrypted)
+        std::cout << "Input master password: ";
+        std::string masterPassword;
+        std::cin >> masterPassword;
+        pm.setMasterPassword(masterPassword);
+
+        pm.start();
+        std::string query;
+        std::cout << "Enter query: ";
+        std::cin >> query;
+
+        PM::Query result;
+        if (isNumber(query))
         {
-                std::cerr << "Error: Encrypted mode is not supported yet.\n";
-                return 1;
+                query--;
+                pm.queryByID(std::stoi(query), result);
         }
         else
-                data = loadNotEncrypted(dataPath + passwordsPath);
+                pm.queryByName(query, result);
 
-        clear();
-
-        bool finished = false;
-        int choice;
-        std::thread inputThread(inputLoop, data, std::ref(finished), std::ref(choice));
-        while (!finished)
+        int id = -1;
+        switch (result.status)
         {
-                if (exitFlag)
-                {
-                        clear();
-                        std::cout << "Time limit reached.\n";
-                        exit(1);
-                }
-                msleep(10);
+                case PM::Query::ONE:
+                        id = result.unpackID()[0];
+                        break;
+                case PM::Query::MULTIPLE:
+                        std::cout << "Multiple results found:\n";
+                        result.print();
+                        std::cout << "Select: ";
+                        std::cin >> query;
+                        if (isNumber(query))
+                                id = std::stoi(query) - 1;
+                        else
+                        {
+                                std::cerr << "Invalid input. Exiting.\n";
+                                return 1;
+                        }
+                case PM::Query::NONE:
+                        std::cerr << "No results found.\n";
+                        return 1;
         }
-        inputThread.join();
-        finished = false;
-
-        double skipTime;
-        std::thread loginThread(loginLoop, std::cref(data.names[choice]), std::cref(data.logins[choice]), std::ref(generalTimer), std::ref(skipTime), std::ref(finished));
-        while (!finished)
+        if (id == -1)
         {
-                if (exitFlag)
-                {
-                        clear();
-                        std::cout << "Time limit reached.\n";
-                        exit(1);
-                }
-                msleep(10);
+                std::cerr << "Invalid ID. Exiting.\n";
+                return 1;
         }
-        loginThread.join();
-        finished = false;
-
-        std::thread passwordThread(passwordLoop, std::cref(data.names[choice]), std::cref(data.passwords[choice]), std::ref(generalTimer), skipTime, std::ref(finished));
-        while (!finished)
-        {
-                if (exitFlag)
-                {
-                        clear();
-                        std::cout << "Time limit reached.\n";
-                        exit(1);
-                }
-                msleep(10);
-        }
-        passwordThread.join();
-
-        setClipboard("");
-        clear();
-
-        exit(0);
-
-        return 0;
+        clipboard.copy(pm.extractLogin(id));
+        std::cout << "Login copied to clipboard.\n";
+        clipboard.waitForPaste();
+        clipboard.copy(pm.extractPassword(id));
+        std::cout << "Password copied to clipboard.\n";
+        clipboard.waitForPaste();
+        pm.stop();
+        std::cout << "Password manager stopped.\n";
 }

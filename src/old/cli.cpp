@@ -20,7 +20,7 @@ void inputLoop(const AccountsData& data, bool &finished, int &choice)
                 std::string searchWord;
                 std::cout << "Search: ";
                 std::getline(std::cin, searchWord);
-                foundIndices = search(searchWord, names); 
+                foundIndices = search(searchWord, names);
                 if (foundIndices.size() == 1)
                 {
                         choice = foundIndices[0];
