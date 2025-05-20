@@ -4,6 +4,8 @@
 #include <set>
 #include <vector>
 
+#include "clipboard.h"
+
 namespace PM
 {
         enum StorageMethod
@@ -84,6 +86,8 @@ namespace PM
                 void stop();
                 void queryByID(int id, Query &result);
                 void queryByName(const std::string &name, Query &result);
+                void extractLogin(int id);
+                void extractPassword(int id);
         };
 }
 

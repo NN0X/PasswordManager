@@ -80,10 +80,10 @@ int main()
                 std::cerr << "Invalid ID. Exiting.\n";
                 return 1;
         }
-        clipboard.copy(pm.extractLogin(id));
+        clipboard.copyManaged(pm.extractLogin(id));
         std::cout << "Login copied to clipboard.\n";
         clipboard.waitForPaste();
-        clipboard.copy(pm.extractPassword(id));
+        clipboard.copyManaged(pm.extractPassword(id));
         std::cout << "Password copied to clipboard.\n";
         clipboard.waitForPaste();
         pm.stop();

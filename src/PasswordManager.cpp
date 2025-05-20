@@ -50,3 +50,13 @@ void PM::PasswordManager::queryByName(const std::string &name, Query &result)
 {
         // TODO: Implement query by name so it doesn't require a specific match
 }
+
+void PM::PasswordManager::extractLogin(int id)
+{
+        // TODO: Implement login extraction so it clears the clipboard after a timeout
+}
+
+void PM::PasswordManager::extractPassword(int id)
+{
+        // TODO: Implement password extraction so it clears the clipboard after a timeout
+}
