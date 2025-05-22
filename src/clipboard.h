@@ -1,16 +1,28 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
 
+
+#ifdef X11
+void attachX11Clipboard();
+#define attachClipboard attachX11Clipboard
+#elif defined(WIN32)
+void attachWin32Clipboard();
+#define attachClipboard attachWin32Clipboard
+#else
+#pragma error "Unsupported platform"
+#endif
+
 class Clipboard
 {
 private:
-        std::string &content;
+        std::string *content;
 
 public:
-        Clipboard() = default;
+        Clipboard();
+        ~Clipboard();
 
         void copy(const std::string &content);
-        void copyManaged(std::string &content); // INFO: this will copy the text but the text can be modified after copying
+        void clear();
         void waitForPaste();
 }
 

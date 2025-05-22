@@ -5,19 +5,24 @@
 #include "clipboard.h"
 #include "PasswordManager.h"
 
+Clipboard clipboard = Clipboard();
+
 void loginTimeoutCallback()
 {
         std::cout << "Login timeout reached.\n";
+        clipboard.clear();
 }
 
 void passwordTimeoutCallback()
 {
         std::cout << "Password timeout reached.\n";
+        clipboard.clear();
 }
 
 void timeoutCallback()
 {
         std::cout << "Timeout reached.\n";
+        clipboard.clear();
 }
 
 inline bool isNumber(const std::string &str)
@@ -31,8 +36,6 @@ int main()
         pm.setCallback(PM::LOGIN_TIMEOUT_EVENT, loginTimeoutCallback);
         pm.setCallback(PM::PASSWORD_TIMEOUT_EVENT, passwordTimeoutCallback);
         pm.setCallback(PM::TIMEOUT_EVENT, timeoutCallback);
-
-        Clipboard clipboard = Clipboard();
 
         std::cout << "Input master password: ";
         std::string masterPassword;
@@ -80,12 +83,14 @@ int main()
                 std::cerr << "Invalid ID. Exiting.\n";
                 return 1;
         }
-        clipboard.copyManaged(pm.extractLogin(id));
+        clipboard.copy(pm.extractLogin(id));
         std::cout << "Login copied to clipboard.\n";
         clipboard.waitForPaste();
-        clipboard.copyManaged(pm.extractPassword(id));
+        clipboard.clear();
+        clipboard.copy(pm.extractPassword(id));
         std::cout << "Password copied to clipboard.\n";
         clipboard.waitForPaste();
+        clipboard.clear();
         pm.stop();
         std::cout << "Password manager stopped.\n";
 }
