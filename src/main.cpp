@@ -3,9 +3,7 @@
 #include "config.h"
 
 #include "clipboard.h"
-#include "PasswordManager.h"
-
-Clipboard clipboard = Clipboard();
+#include "passwordManager.h"
 
 void loginTimeoutCallback()
 {
@@ -32,6 +30,8 @@ inline bool isNumber(const std::string &str)
 
 int main()
 {
+        Clipboard clipboard;
+
         PM::PasswordManager pm("passwords.aes", PM::ENCRYPTED, PM::AES256, 20, 10, 60);
         pm.setCallback(PM::LOGIN_TIMEOUT_EVENT, loginTimeoutCallback);
         pm.setCallback(PM::PASSWORD_TIMEOUT_EVENT, passwordTimeoutCallback);
@@ -83,14 +83,10 @@ int main()
                 std::cerr << "Invalid ID. Exiting.\n";
                 return 1;
         }
-        clipboard.copy(pm.extractLogin(id));
+        pm.extractLogin(id, clipboard);
         std::cout << "Login copied to clipboard.\n";
-        clipboard.waitForPaste();
-        clipboard.clear();
-        clipboard.copy(pm.extractPassword(id));
+        pm.extractPassword(id, clipboard);
         std::cout << "Password copied to clipboard.\n";
-        clipboard.waitForPaste();
-        clipboard.clear();
         pm.stop();
         std::cout << "Password manager stopped.\n";
 }
